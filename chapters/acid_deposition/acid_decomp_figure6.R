@@ -1,65 +1,19 @@
 library(tidyverse)
 library(plotly)
 library(dplyr)
+library(webshot2)
 
-inUrl2 <- "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/208/14/024b6acc5cb2e03a14fff5558bbffc0c"
-infile2 <- tempfile()
-try(download.file(inUrl2,infile2,method="curl"))
-if (is.na(file.size(infile2))) download.file(inUrl2,infile2,method="auto")
+# setwd to folder in which this script resides
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-dt2 <- read.csv(infile2, header=F, skip=1, sep="", quot="")
-dt2 <-read.csv(infile2,header=F 
-               ,skip=1
-               ,sep=","  
-               ,quot='"' 
-               , col.names=c(
-                 "site",     
-                 "date",     
-                 "timeEST",     
-                 "barcode",     
-                 "pH",     
-                 "DIC",     
-                 "spCond",     
-                 "temp",     
-                 "ANC960",     
-                 "ANCMet",     
-                 "gageHt",     
-                 "hydroGraph",     
-                 "flowGageHt",     
-                 "fieldCode",     
-                 "notes",     
-                 "uniqueID",     
-                 "waterYr",     
-                 "Ca",     
-                 "Mg",     
-                 "K",     
-                 "Na",     
-                 "TMAl",     
-                 "OMAl",     
-                 "Al_ICP",
-                 "Al_ferron",
-                 "NH4",     
-                 "SO4",     
-                 "NO3",     
-                 "Cl",     
-                 "PO4",     
-                 "DOC",     
-                 "TDN",     
-                 "DON",     
-                 "SiO2",     
-                 "Mn",     
-                 "Fe",     
-                 "F",     
-                 "cationCharge",     
-                 "anionCharge",     
-                 "ionError",     
-                 "duplicate",     
-                 "sampleType",     
-                 "ionBalance",     
-                 "canonical",     
-                 "pHmetrohm"    ), check.names=TRUE)
+# source the fetch table from EDI function
+source("../../functions/getEDItable-function.R")
 
-unlink(infile2)
+# fetch the most recent version of the table from EDI
+dt <- get_edi_table(identifier = "208", entity_seq = 2)
+str(dt)
+
+
 dt2 <- dt2 |> 
   filter(site == "W1" | site == "W6")
 
@@ -232,7 +186,7 @@ fig <- fig |>
     xaxis6 = list(matches = "x")
   )
 
-output_file <- "chapters/acid_deposition/StreamChem-W1W6_longtermTrends.html"
+output_file <- "StreamChem-W1W6_longtermTrends.html"
 fname <- tools::file_path_sans_ext(basename(output_file))
 
 p <- fig |>
@@ -245,3 +199,7 @@ htmlwidgets::saveWidget(p, file = tmp_html, selfcontained = TRUE)
 # Copy the single file to your desired output location
 file.copy(tmp_html, output_file, overwrite = TRUE)
 unlink(tmp_html)
+
+# Save static PNG from the HTML
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium-browser")  # adjust path
+webshot2::webshot(output_file, file ="StreamChem-W1W6_longtermTrends.png" , delay = 2)
