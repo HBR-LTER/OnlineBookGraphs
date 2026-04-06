@@ -1,61 +1,32 @@
 library(tidyverse)
 library(plotly)
 library(dplyr)
-
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/446/1/95498fa6cf9986255fae32c1924182d9" 
-infile1 <- tempfile()
-try(download.file(inUrl1,infile1,method="curl",extra=paste0(' -A "',getOption("HTTPUserAgent"),'"')))
-if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
-ws1_data <-read.csv(infile1,header=F 
-               ,skip=1
-               ,sep=","  
-               ,quot='"' 
-               , col.names=c(
-                 "watershed",     
-                 "plot",     
-                 "plot_area_ha",     
-                 "year",     
-                 "forest_type",     
-                 "sample_class",     
-                 "species",     
-                 "dbh_cm",     
-                 "status",     
-                 "vigor",     
-                 "exp_factor",     
-                 "elev_m",     
-                 "steep_deg",     
-                 "aspect_deg",     
-                 "hli"    ), check.names=TRUE)
-unlink(infile1)
+library(webshot2)
 
 
+# setwd to folder in which this script resides
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-inUrl6  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/448/1/ac44ba6b0f0aac1d8e5e270a63d0e009" 
-infile6 <- tempfile()
-try(download.file(inUrl6,infile6,method="curl",extra=paste0(' -A "',getOption("HTTPUserAgent"),'"')))
-if (is.na(file.size(infile6))) download.file(inUrl6,infile6,method="auto")
-ws6_data <-read.csv(infile6,header=F 
-               ,skip=1
-               ,sep=","  
-               ,quot='"' 
-               , col.names=c(
-                 "watershed",     
-                 "plot",     
-                 "plot_area_ha",     
-                 "year",     
-                 "forest_type",     
-                 "sample_class",     
-                 "species",     
-                 "dbh_cm",     
-                 "status",     
-                 "vigor",     
-                 "exp_factor",     
-                 "elev_m",     
-                 "steep_deg",     
-                 "aspect_deg",     
-                 "hli"    ), check.names=TRUE)
-unlink(infile6)
+# source the fetch table from EDI function
+source("../../functions/getEDItable-function.R")
 
+# fetch the most recent version of the table from EDI
+dt <- get_edi_table(identifier = "446", entity_seq = 1)
+str(dt)
+
+ws1_data <- dt 
+
+# setwd to folder in which this script resides
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# source the fetch table from EDI function
+source("../../functions/getEDItable-function.R")
+
+# fetch the most recent version of the table from EDI
+dt <- get_edi_table(identifier = "448", entity_seq = 1)
+str(dt)
+
+ws6_data <- dt 
 
 df <- bind_rows(ws1_data, ws6_data)
 
@@ -198,7 +169,17 @@ fig
 output_file <- "BasalArea-W1W6_Trends.html"
 fname <- tools::file_path_sans_ext(basename(output_file))
 
-fig |>
-  config(toImageButtonOptions = list(format = "png", filename = fname)) |>
-  htmlwidgets::saveWidget(file = output_file)
+p <- fig |>
+  config(toImageButtonOptions = list(format = "png", filename = fname))
 
+# Write to temp dir where libdir can be relative
+tmp_html <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(p, file = tmp_html, selfcontained = TRUE)
+
+# Copy the single file to your desired output location
+file.copy(tmp_html, output_file, overwrite = TRUE)
+unlink(tmp_html)
+
+# Save static PNG from the HTML
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium-browser")  # adjust path
+webshot2::webshot(output_file, file ="BasalArea-W1W6.png" , delay = 2)

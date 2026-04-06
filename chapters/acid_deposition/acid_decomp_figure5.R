@@ -5,9 +5,7 @@
 
 
 
-library(reticulate)
-reticulate::use_python("/usr/bin/python3", required = TRUE)
-
+library(webshot2)
 library(tidyverse)
 library(plotly)
 library(dplyr)
@@ -20,7 +18,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("../../functions/getEDItable-function.R")
 
 # fetch the most recent version of the table from EDI
-dt <- get_edi_table(identifier = "208", entity_seq = 14)
+dt <- get_edi_table(identifier = "208", entity_seq = 2)
 str(dt)
 
 dt <- dt |> 
@@ -192,7 +190,7 @@ fig <- fig |>
 plotly::save_image(fig, "StreamChem-W6_longtermTrends.png", width = 800, height = 1400, scale = 2)
 
 #save as html widget
-output_file <- "chapters/acid_deposition/StreamChem-W6_longtermTrends.html"
+output_file <- "StreamChem-W6_longtermTrends.html"
 
 fname <- tools::file_path_sans_ext(basename(output_file))
 
@@ -207,5 +205,7 @@ htmlwidgets::saveWidget(p, file = tmp_html, selfcontained = TRUE)
 file.copy(tmp_html, output_file, overwrite = TRUE)
 unlink(tmp_html)
 
-
+# Save static PNG from the HTML
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium-browser")  # adjust path
+webshot2::webshot(output_file, file ="StreamChem-W6_longtermTrends.png" , delay = 2)
 

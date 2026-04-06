@@ -1,12 +1,20 @@
 library(tidyverse)
 library(plotly)
 library(here)
-SoilMassData <- read_csv(
-  "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/172/3/775e243b7a2b67c0047498533bf5b9d1"
-)
+
+
+# setwd to folder in which this script resides
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# source the fetch table from EDI function
+source("../../functions/getEDItable-function.R")
+
+# fetch the most recent version of the table from EDI
+dt <- get_edi_table(identifier = "172", entity_seq = 5)
+str(dt)
 
 # basic cleaning
-SoilMassData2 <- SoilMassData |>
+SoilMassData2 <- dt |>
   select("Year", "Plot", "Horizon", "OM_TM", "OM_OM", "OM_LOI") |>
   mutate(OM_LOI = na_if(OM_LOI, -9999.99)) |> 
   filter(Horizon != "min")
@@ -52,20 +60,36 @@ plot1 <- ggplot(SoilMassData4, aes(Year, OM)) +
 plot1
 
 # convert to plotly graph
-plotly1 <- ggplotly(plot1, margin = m) |> layout(modebar = list(
+fig <- ggplotly(plot1, margin = m) |> layout(modebar = list(
   bgcolor = "white",
   color = "black",
   activecolor = "#1B5E20"
-))
-plotly1
+),
+title = list(
+  text = "Forest Floor Organic Matter",
+  x = 0.5,
+  xanchor = "center",
+  font = list(size = 24, color = "black")
+),
+margin = list(t = 60)   # pixels of top margin
 
-htmlwidgets::saveWidget(
-  widget = plotly1,
-  # builds file path
-  here::here(
-    "chapters",
-    "decomposition_carbon",
-    "Fig4_OrganicMatter.html"
-  ),
-  selfcontained = TRUE
 )
+fig
+
+output_file <- "ForestFloor_OrganicMatter.html"
+fname <- tools::file_path_sans_ext(basename(output_file))
+
+p <- plotfinal |>
+  config(toImageButtonOptions = list(format = "png", filename = fname))
+
+# Write to temp dir where libdir can be relative
+tmp_html <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(p, file = tmp_html, selfcontained = TRUE)
+
+# Copy the single file to your desired output location
+file.copy(tmp_html, output_file, overwrite = TRUE)
+unlink(tmp_html)
+
+# Save static PNG from the HTML
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium-browser")  # adjust path
+webshot2::webshot(output_file, file ="ForestFloor_OrganicMatter.png" , delay = 2)

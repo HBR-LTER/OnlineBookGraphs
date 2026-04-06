@@ -2,6 +2,7 @@ library(tidyverse)
 library(lubridate)
 library(plotly)
 
+
 # read in and combine watersheds
 W2 <- read_csv(
   "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/4/19/a6aeef15070be913ee2f06f431b9b7a7"
