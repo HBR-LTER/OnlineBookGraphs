@@ -2,7 +2,7 @@ library(tidyverse)
 library(lubridate)
 library(plotly)
 
-
+setwd("~/mnt/HBRIM/data/onlinebookgraphs/OnlineBookGraphs/chapters/forest_management")
 # read in and combine watersheds
 W2 <- read_csv(
   "https://pasta.lternet.edu/package/data/eml/knb-lter-hbr/4/19/a6aeef15070be913ee2f06f431b9b7a7"
@@ -347,11 +347,10 @@ pfinal <- subplot(
   margin = 0.01
 )
 
-htmlwidgets::saveWidget(widget = pfinal,
-                        here::here(
-                          "chapters",
-                          "forest_management",
-                          "Fig8_StreamwaterCalcium.html"
-                        ),
-                        selfcontained = TRUE
-)
+output_file="chapters/forest_managment/StreamwaterCalcium.html"
+tmp_html <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(pfinal, file = tmp_html, selfcontained = TRUE)
+file.copy(tmp_html, output_file, overwrite = TRUE)
+unlink(tmp_html) 
+
+
